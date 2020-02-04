@@ -4,26 +4,24 @@ import logging
 
 import requests
 
+import config
 
 logger = logging.getLogger(__name__)
 
-
-KAFKA_CONNECT_URL = "http://localhost:8083/connectors"
-CONNECTOR_NAME = "stations"
 
 def configure_connector():
     """Starts and configures the Kafka Connect connector"""
     logging.debug("creating or updating kafka connect connector...")
 
-    resp = requests.get(f"{KAFKA_CONNECT_URL}/{CONNECTOR_NAME}")
+    resp = requests.get(f"{config.KAFKA_CONNECT_URL}/{config.CONNECTOR_NAME}")
     if resp.status_code == 200:
         logging.debug("connector already created skipping recreation")
         return
     resp = requests.post(
-       KAFKA_CONNECT_URL,
+       config.KAFKA_CONNECT_URL,
        headers={"Content-Type": "application/json"},
        data=json.dumps({
-           "name": CONNECTOR_NAME,
+           "name": config.CONNECTOR_NAME,
            "config": {
                "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
                "key.converter": "org.apache.kafka.connect.json.JsonConverter",
@@ -31,21 +29,13 @@ def configure_connector():
                "value.converter": "org.apache.kafka.connect.json.JsonConverter",
                "value.converter.schemas.enable": "false",
                "batch.max.rows": "500",
-               # TODO
-               "connection.url": "jdbc:postgresql://localhost:5432/cta",
-               # TODO
-               "connection.user": "cta_admin",
-               # TODO
-               "connection.password": "chicago",
-               # TODO
+               "connection.url": config.POSTGRES_CONNECTION_STRING,
+               "connection.user": config.POSTGRES_USER,
+               "connection.password": config.POSTGRES_PASS,
                "table.whitelist": "stations",
-               # TODO
                "mode": "incrementing",
-               # TODO
                "incrementing.column.name": "stop_id",
-               # TODO
-               "topic.prefix": "com.udacity.cta.gs.topic.connect.",
-               # TODO
+               "topic.prefix": config.CONNECTOR_TOPIC_PREFIX,
                "poll.interval.ms": "60000",
            }
        }),

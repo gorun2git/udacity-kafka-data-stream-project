@@ -16,9 +16,11 @@ from consumer import KafkaConsumer
 from models import Lines, Weather
 import topic_check
 
+import config
+
 
 logger = logging.getLogger(__name__)
-WEB_SERVER_PORT = 8889
+
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -40,7 +42,7 @@ class MainHandler(tornado.web.RequestHandler):
 
 def run_server():
     """Runs the Tornado Server and begins Kafka consumption"""
-    if topic_check.topic_exists("TURNSTILE_SUMMARY") is False:
+    if topic_check.topic_exists(config.TOPIC_TURNSTILE_SUMMARY) is False:
         logger.fatal(
             "Ensure that the KSQL Command has run successfully!"
         )
@@ -58,28 +60,28 @@ def run_server():
     application = tornado.web.Application(
         [(r"/", MainHandler, {"weather": weather_model, "lines": lines})]
     )
-    application.listen(WEB_SERVER_PORT)
+    application.listen(config.WEB_SERVER_PORT)
 
     # Build kafka consumers
     consumers = [
         KafkaConsumer(
-            "com.udacity.cta.gs.topic.weathers",
+            config.TOPIC_WEATHER,
             weather_model.process_message,
             offset_earliest=True,
         ),
         KafkaConsumer(
-            "com.udacity.cta.gs.topic.connect.stations.table",
+            config.TOPIC_FAUST_TABLE,
             lines.process_message,
             offset_earliest=True,
             is_avro=False,
         ),
         KafkaConsumer(
-            "com.udacity.cta.gs.topic.stations",
+            config.TOPIC_STATIONS,
             lines.process_message,
             offset_earliest=True,
         ),
         KafkaConsumer(
-            "TURNSTILE_SUMMARY",
+            config.TOPIC_TURNSTILE_SUMMARY,
             lines.process_message,
             offset_earliest=True,
             is_avro=False,
@@ -88,7 +90,7 @@ def run_server():
 
     try:
         logger.info(
-            f"Open a web browser to http://localhost:{WEB_SERVER_PORT} to see the Transit Status Page"
+            f"Open a web browser to http://localhost:{config.WEB_SERVER_PORT} to see the Transit Status Page"
         )
         for consumer in consumers:
             tornado.ioloop.IOLoop.current().spawn_callback(consumer.consume)

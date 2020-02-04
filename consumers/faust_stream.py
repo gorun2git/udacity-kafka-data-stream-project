@@ -3,6 +3,8 @@ import logging
 
 import faust
 
+import config
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +31,10 @@ class TransformedStation(faust.Record):
     line: str
 
 
-app = faust.App("stations-stream", broker="kafka://localhost:9092", store="memory://")
-topic = app.topic("com.udacity.cta.gs.topic.connect.stations", value_type=Station)
-out_topic = app.topic("com.udacity.cta.gs.topic.connect.stations.table", partitions=1)
+input_topic = f"{config.CONNECTOR_TOPIC_PREFIX}{config.CONNECTOR_NAME}"
+app = faust.App("stations-stream", broker=config.FAUST_BROKER_URL, store="memory://")
+topic = app.topic(input_topic, value_type=Station)
+out_topic = app.topic(config.TOPIC_FAUST_TABLE, partitions=1)
 table = app.Table(
    "station_transformated",
    default=int,

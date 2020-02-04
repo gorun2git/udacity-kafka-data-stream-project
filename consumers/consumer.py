@@ -7,9 +7,11 @@ from confluent_kafka.avro import AvroConsumer
 from confluent_kafka.avro.serializer import SerializerError
 from tornado import gen
 
+import config
+
 
 logger = logging.getLogger(__name__)
-BROKER_URL = "PLAINTEXT://localhost:9092"
+
 
 class KafkaConsumer:
     """Defines the base kafka consumer class"""
@@ -31,13 +33,13 @@ class KafkaConsumer:
         self.offset_earliest = offset_earliest
         self.broker_properties = {
             "group.id": "0",
-            "bootstrap.servers": BROKER_URL,
+            "bootstrap.servers": config.BROKER_URL,
             "auto.offset.reset": "earliest",
             "max.poll.interval.ms": "300000"
         }
 
         if is_avro:
-            self.broker_properties["schema.registry.url"] = "http://localhost:8081"
+            self.broker_properties["schema.registry.url"] = config.SCHEMA_REGISTRY_URL
             self.consumer = AvroConsumer(self.broker_properties)
         else:
             self.consumer = Consumer(self.broker_properties)

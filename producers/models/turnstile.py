@@ -7,6 +7,7 @@ from confluent_kafka import avro
 from models.producer import Producer
 from models.turnstile_hardware import TurnstileHardware
 
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class Turnstile(Producer):
         )
 
         super().__init__(
-            "com.udacity.cta.gs.topic.turnstile",
+            config.TOPIC_TURNSTILE,
             key_schema=Turnstile.key_schema,
             value_schema=Turnstile.value_schema,
             num_partitions=3,

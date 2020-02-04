@@ -4,6 +4,7 @@ import logging
 import re
 
 from models import Line
+import config
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class Lines:
         """Processes a station message"""
         if re.match(r"^com(\.)udacity(\.)cta(\.)gs(\.)topic(\.|\w|\.)*stations(\.|\w)*", message.topic()):
             value_message = message.value()
-            if message.topic() == "com.udacity.cta.gs.topic.connect.stations.table":
+            if message.topic() == config.TOPIC_FAUST_TABLE:
                 value_message = json.loads(value_message)
             if value_message["line"] == "green":
                 self.green_line.process_message(message)
@@ -32,7 +33,7 @@ class Lines:
                 self.blue_line.process_message(message)
             else:
                 logger.debug("discarding unknown line msg %s", value_message["line"])
-        elif "TURNSTILE_SUMMARY" == message.topic():
+        elif config.TOPIC_TURNSTILE_SUMMARY == message.topic():
             self.green_line.process_message(message)
             self.red_line.process_message(message)
             self.blue_line.process_message(message)
