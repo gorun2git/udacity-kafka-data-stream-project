@@ -3,7 +3,7 @@ import json
 import logging
 
 from models import Station
-
+import config
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class Line:
 
         station_id = value.get("station_id")
         station = self.stations.get(station_id)
-        if station is None:
+        if not station:
             logger.debug("unable to handle message due to missing station")
             return
         station.handle_arrival(
@@ -56,24 +56,23 @@ class Line:
 
     def process_message(self, message):
         """Given a kafka message, extract data"""
-        # TODO: Based on the message topic, call the appropriate handler.
-        if True: # Set the conditional correctly to the stations Faust Table
+        if message.topic() == config.TOPIC_FAUST_TABLE:  # Set the conditional correctly to the stations Faust Table
             try:
                 value = json.loads(message.value())
                 self._handle_station(value)
             except Exception as e:
                 logger.fatal("bad station? %s, %s", value, e)
-        elif True: # Set the conditional to the arrival topic
+        elif message.topic() == config.TOPIC_STATIONS:  # Set the conditional to the arrival topic
             self._handle_arrival(message)
-        elif True: # Set the conditional to the KSQL Turnstile Summary Topic
-            json_data = json.loads(message.value())
-            station_id = json_data.get("STATION_ID")
+        elif message.topic() == config.TOPIC_TURNSTILE_SUMMARY:  # Set the conditional to the KSQL Turnstile Summary Topic
+            value = json.loads(message.value())
+            station_id = value.get("STATION_ID")
             station = self.stations.get(station_id)
             if station is None:
                 logger.debug("unable to handle message due to missing station")
                 return
-            station.process_message(json_data)
+            station.process_message(value)
         else:
             logger.debug(
-                "unable to find handler for message from topic %s", message.topic
+                "unable to find handler for message from topic %s", message.topic()
             )

@@ -6,6 +6,8 @@ from pathlib import Path
 import random
 import urllib.parse
 
+import config
+
 import requests
 
 from models.producer import Producer
@@ -21,8 +23,6 @@ class Weather(Producer):
         "status", "sunny partly_cloudy cloudy windy precipitation", start=0
     )
 
-    rest_proxy_url = "http://localhost:8082"
-
     key_schema = None
     value_schema = None
 
@@ -30,16 +30,12 @@ class Weather(Producer):
     summer_months = set((6, 7, 8))
 
     def __init__(self, month):
-        #
-        #
-        # TODO: Complete the below by deciding on a topic name, number of partitions, and number of
-        # replicas
-        #
-        #
         super().__init__(
-            "weather", # TODO: Come up with a better topic name
+            config.TOPIC_WEATHER,
             key_schema=Weather.key_schema,
             value_schema=Weather.value_schema,
+            num_partitions=2,
+            num_replicas=1
         )
 
         self.status = Weather.status.sunny
@@ -72,38 +68,24 @@ class Weather(Producer):
 
     def run(self, month):
         self._set_weather(month)
+        request_url = f"{config.REST_PROXY_URL}/topics/{self.topic_name}"
+        resp = requests.post(request_url,
+           headers={"Content-Type": "application/vnd.kafka.avro.v2+json"},
+           data=json.dumps(
+               {
+                   "value_schema": json.dumps(Weather.value_schema),
+                   "key_schema": json.dumps(Weather.key_schema),
+                   "records": [{"key": {"timestamp": self.time_millis()},
+                       "value": {
+                           "temperature": self.temp,
+                           "status": self.status.name
+                       }
 
-        #
-        #
-        # TODO: Complete the function by posting a weather event to REST Proxy. Make sure to
-        # specify the Avro schemas and verify that you are using the correct Content-Type header.
-        #
-        #
-        logger.info("weather kafka proxy integration incomplete - skipping")
-        #resp = requests.post(
-        #    #
-        #    #
-        #    # TODO: What URL should be POSTed to?
-        #    #
-        #    #
-        #    f"{Weather.rest_proxy_url}/TODO",
-        #    #
-        #    #
-        #    # TODO: What Headers need to bet set?
-        #    #
-        #    #
-        #    headers={"Content-Type": "TODO"},
-        #    data=json.dumps(
-        #        {
-        #            #
-        #            #
-        #            # TODO: Provide key schema, value schema, and records
-        #            #
-        #            #
-        #        }
-        #    ),
-        #)
-        #resp.raise_for_status()
+                   }]
+               }
+           ),
+        )
+        resp.raise_for_status()
 
         logger.debug(
             "sent weather data to kafka, temp: %s, status: %s",

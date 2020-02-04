@@ -16,8 +16,11 @@ from consumer import KafkaConsumer
 from models import Lines, Weather
 import topic_check
 
+import config
+
 
 logger = logging.getLogger(__name__)
+
 
 
 class MainHandler(tornado.web.RequestHandler):
@@ -34,21 +37,20 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         """Responds to get requests"""
         logging.debug("rendering and writing handler template")
-        self.write(
-            MainHandler.template.generate(weather=self.weather, lines=self.lines)
-        )
+        self.write(MainHandler.template.generate(weather=self.weather, lines=self.lines))
 
 
 def run_server():
     """Runs the Tornado Server and begins Kafka consumption"""
-    if topic_check.topic_exists("TURNSTILE_SUMMARY") is False:
+    if topic_check.topic_exists(config.TOPIC_TURNSTILE_SUMMARY) is False:
         logger.fatal(
-            "Ensure that the KSQL Command has run successfully before running the web server!"
+            "Ensure that the KSQL Command has run successfully!"
         )
         exit(1)
-    if topic_check.topic_exists("org.chicago.cta.stations.table.v1") is False:
+
+    if topic_check.topic_pattern_match("stations.table") is False:
         logger.fatal(
-            "Ensure that Faust Streaming is running successfully before running the web server!"
+            "Ensure that Faust Streaming is running successfully!"
         )
         exit(1)
 
@@ -58,28 +60,28 @@ def run_server():
     application = tornado.web.Application(
         [(r"/", MainHandler, {"weather": weather_model, "lines": lines})]
     )
-    application.listen(8888)
+    application.listen(config.WEB_SERVER_PORT)
 
     # Build kafka consumers
     consumers = [
         KafkaConsumer(
-            "org.chicago.cta.weather.v1",
+            config.TOPIC_WEATHER,
             weather_model.process_message,
             offset_earliest=True,
         ),
         KafkaConsumer(
-            "org.chicago.cta.stations.table.v1",
+            config.TOPIC_FAUST_TABLE,
             lines.process_message,
             offset_earliest=True,
             is_avro=False,
         ),
         KafkaConsumer(
-            "^org.chicago.cta.station.arrivals.",
+            config.TOPIC_STATIONS,
             lines.process_message,
             offset_earliest=True,
         ),
         KafkaConsumer(
-            "TURNSTILE_SUMMARY",
+            config.TOPIC_TURNSTILE_SUMMARY,
             lines.process_message,
             offset_earliest=True,
             is_avro=False,
@@ -88,7 +90,7 @@ def run_server():
 
     try:
         logger.info(
-            "Open a web browser to http://localhost:8888 to see the Transit Status Page"
+            f"Open a web browser to http://localhost:{config.WEB_SERVER_PORT} to see the Transit Status Page"
         )
         for consumer in consumers:
             tornado.ioloop.IOLoop.current().spawn_callback(consumer.consume)
@@ -99,6 +101,9 @@ def run_server():
         tornado.ioloop.IOLoop.current().stop()
         for consumer in consumers:
             consumer.close()
+    except Exception as ex:
+        logger.fatal(f"server.py error: {ex}")
+        exit(1)
 
 
 if __name__ == "__main__":
