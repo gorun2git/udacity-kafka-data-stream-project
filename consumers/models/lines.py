@@ -19,18 +19,20 @@ class Lines:
 
     def process_message(self, message):
         """Processes a station message"""
-        if "org.chicago.cta.station" in message.topic():
-            value = message.value()
-            if message.topic() == "org.chicago.cta.stations.table.v1":
-                value = json.loads(value)
-            if value["line"] == "green":
+        # if "org.chicago.cta.station" in message.topic():
+        if "com.udacity.cta.gs.topic.stations" in message.topic():
+            value_message = message.value()
+            #if message.topic() == "org.chicago.cta.stations.table.v1":
+            if message.topic() == "com.udacity.cta.gs.topic.connect.stations.table":
+                value_message = json.loads(value_message)
+            if value_message["line"] == "green":
                 self.green_line.process_message(message)
-            elif value["line"] == "red":
+            elif value_message["line"] == "red":
                 self.red_line.process_message(message)
-            elif value["line"] == "blue":
+            elif value_message["line"] == "blue":
                 self.blue_line.process_message(message)
             else:
-                logger.debug("discarding unknown line msg %s", value["line"])
+                logger.debug("discarding unknown line msg %s", value_message["line"])
         elif "TURNSTILE_SUMMARY" == message.topic():
             self.green_line.process_message(message)
             self.red_line.process_message(message)

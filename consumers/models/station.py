@@ -21,7 +21,10 @@ class Station:
     @classmethod
     def from_message(cls, value):
         """Given a Kafka Station message, creates and returns a station"""
-        return Station(value["station_id"], value["station_name"], value["order"])
+        return Station(value["station_id"],
+                       value["station_name"],
+                       value["order"]
+                      )
 
     def handle_departure(self, direction):
         """Removes a train from the station"""
@@ -38,6 +41,7 @@ class Station:
         else:
             self.dir_b = status_dict
 
-    def process_message(self, json_data):
+    def process_message(self, value):
         """Handles arrival and turnstile messages"""
-        self.num_turnstile_entries = json_data["COUNT"]
+        print(f"station.process_message value: {value}")
+        self.num_turnstile_entries = value["COUNT"]
