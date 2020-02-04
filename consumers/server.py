@@ -20,6 +20,7 @@ import topic_check
 logger = logging.getLogger(__name__)
 WEB_SERVER_PORT = 8889
 
+
 class MainHandler(tornado.web.RequestHandler):
     """Defines a web request handler class"""
 
@@ -34,11 +35,7 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         """Responds to get requests"""
         logging.debug("rendering and writing handler template")
-        self.write(MainHandler.template.generate(weather=self.weather, lines=self.lines)
-        )
-        print(f"(blue.stations_value):{self.lines.blue_line.stations.values()}")
-        print(f"(green.stations_value):{self.lines.green_line.stations.values()}")
-        print(f"(red.stations_value):{self.lines.red_line.stations.values()}")
+        self.write(MainHandler.template.generate(weather=self.weather, lines=self.lines))
 
 
 def run_server():
@@ -57,8 +54,6 @@ def run_server():
 
     weather_model = Weather()
     lines = Lines()
-
-
 
     application = tornado.web.Application(
         [(r"/", MainHandler, {"weather": weather_model, "lines": lines})]
@@ -105,7 +100,8 @@ def run_server():
         for consumer in consumers:
             consumer.close()
     except Exception as ex:
-        print(f"server.py error: {ex}")
+        logger.fatal(f"server.py error: {ex}")
+        exit(1)
 
 
 if __name__ == "__main__":

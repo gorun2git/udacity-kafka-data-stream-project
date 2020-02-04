@@ -45,13 +45,12 @@ class KafkaConsumer:
         try:
            self.consumer.subscribe([self.topic_name_pattern], on_assign=self.on_assign)
         except Exception as e:
-            print(f"KafkaConsumer.subscription.error: {e}")
+            logger.fatal(f"KafkaConsumer.subscription.error: {e}")
 
     def on_assign(self, consumer, partitions):
         """Callback for when topic assignment takes place"""
         for partition in partitions:
             partition.offset = OFFSET_BEGINNING
-            #consumer.seek_to_beginning(partition)
 
         logger.info(f"partitions assigned for {self.topic_name_pattern}")
         consumer.assign(partitions)
@@ -72,18 +71,13 @@ class KafkaConsumer:
                 if message is None:
                     return 0
                 elif message.error() is not None:
-                    print(f"Consumer: Error -> {message.error()}")
+                    logger.error(f"Consumer: Error -> {message.error()}")
                     return 0
                 else:
                     self.message_handler(message)
-                    #print(f"Consumed message: {message.key()}: {message.value()}")
                     return 1
             except Exception as e:
-                print(f"_consume error: {e}, topic: {message.topic()}, message.value(): {message.value()}")
-                exit(1)
-                return 0
-        # return 0
-
+                logger.fatal(f"_consume error: {e}, topic: {message.topic()}, message.value(): {message.value()}")
 
     def close(self):
         """Cleans up any open kafka consumers"""

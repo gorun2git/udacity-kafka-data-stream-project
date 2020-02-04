@@ -23,8 +23,7 @@ class Station:
         """Given a Kafka Station message, creates and returns a station"""
         return Station(value["station_id"],
                        value["station_name"],
-                       value["order"]
-                      )
+                       value["order"])
 
     def handle_departure(self, direction):
         """Removes a train from the station"""
@@ -43,5 +42,4 @@ class Station:
 
     def process_message(self, value):
         """Handles arrival and turnstile messages"""
-        print(f"station.process_message value: {value}")
         self.num_turnstile_entries = value["COUNT"]

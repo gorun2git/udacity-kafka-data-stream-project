@@ -1,6 +1,7 @@
 """Contains functionality related to Lines"""
 import json
 import logging
+import re
 
 from models import Line
 
@@ -19,10 +20,8 @@ class Lines:
 
     def process_message(self, message):
         """Processes a station message"""
-        # if "org.chicago.cta.station" in message.topic():
-        if "com.udacity.cta.gs.topic.stations" in message.topic():
+        if re.match(r"^com(\.)udacity(\.)cta(\.)gs(\.)topic(\.|\w|\.)*stations(\.|\w)*", message.topic()):
             value_message = message.value()
-            #if message.topic() == "org.chicago.cta.stations.table.v1":
             if message.topic() == "com.udacity.cta.gs.topic.connect.stations.table":
                 value_message = json.loads(value_message)
             if value_message["line"] == "green":
